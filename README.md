@@ -9,9 +9,9 @@ CORE FEATURES
 * Multimedia Suite: Built-in support for rendering JPEG images and playback of MJPEG video files from the SD card.
 * Lua Virtual Machine: Provides a sandbox for third-party scripts with direct hooks into hardware functions via the custom os library.
 ________________
-SD CARD DIRECTORY STRUCTURE
-The OS identifies applications by scanning for specific file flags. The SD card must follow this hierarchy:
-SD Card Root/  
+SD CARD DIRECTORY STRUCTURE  
+The OS identifies applications by scanning for specific file flags. The SD card must follow this hierarchy:  
+SD Card Root/    
 ├── apps/  
 │ └── Snake_Game/  
 │ ├── Snake.game (Flag file containing the Display Name)  
