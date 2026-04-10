@@ -11,19 +11,19 @@ CORE FEATURES
 ________________
 SD CARD DIRECTORY STRUCTURE
 The OS identifies applications by scanning for specific file flags. The SD card must follow this hierarchy:
-SD Card Root/
-├── apps/
-│ └── Snake_Game/
-│ ├── Snake.game (Flag file containing the Display Name)
-│ ├── main.lua (Main Execution Logic)
-│ └── icon.jpg (Launcher Thumbnail)
-├── games/
-│ └── (Standalone .lua files for the legacy launcher)
-└── [Other Files] (Support for .txt, .jpg, and .mjpeg)
-The .game File
-The .game file serves two purposes:
-1. App Discovery: Its presence tells the OS that the parent folder is a valid application.
-2. Metadata: The text content inside the file is read by the OS and displayed as the App Name on the desktop UI.
+SD Card Root/  
+├── apps/  
+│ └── Snake_Game/  
+│ ├── Snake.game (Flag file containing the Display Name)  
+│ ├── main.lua (Main Execution Logic)  
+│ └── icon.jpg (Launcher Thumbnail)  
+├── games/    
+│ └── (Standalone .lua files for the legacy launcher)  
+└── [Other Files] (Support for .txt, .jpg, and .mjpeg)  
+The .game File  
+The .game file serves two purposes:  
+1. App Discovery: Its presence tells the OS that the parent folder is a valid application.  
+2. Metadata: The text content inside the file is read by the OS and displayed as the App Name on the desktop UI.  
 ________________
 LUA API REFERENCE
 The following functions are exported from the C++ kernel to the Lua environment:
