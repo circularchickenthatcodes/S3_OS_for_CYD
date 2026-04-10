@@ -316,6 +316,7 @@ void playMJPEG(String path) {
   free(mjpeg_buf);
   mjpegFile.close();
   kbdBack = false;
+  TJpg.setJpgScale(1);
   fullRedraw();
 }
 
@@ -437,6 +438,22 @@ void runLua(String filename) {
   f.close();
   lua_State *L = luaL_newstate();
   luaL_openlibs(L);
+
+  lua_State *L = luaL_newstate();
+  luaL_openlibs(L);
+
+  // ---  LUA COLOR DEFINITIONS  ---
+  lua_pushinteger(L, 0x0000); lua_setglobal(L, "BLACK");
+  lua_pushinteger(L, 0xFFFF); lua_setglobal(L, "WHITE");
+  lua_pushinteger(L, 0xF800); lua_setglobal(L, "RED");
+  lua_pushinteger(L, 0x07E0); lua_setglobal(L, "GREEN");
+  lua_pushinteger(L, 0x001F); lua_setglobal(L, "BLUE");
+  lua_pushinteger(L, 0xFFE0); lua_setglobal(L, "YELLOW");
+  lua_pushinteger(L, 0xF81F); lua_setglobal(L, "MAGENTA");
+  lua_pushinteger(L, 0x07FF); lua_setglobal(L, "CYAN");
+  lua_pushinteger(L, 0xFD20); lua_setglobal(L, "ORANGE");
+  lua_pushinteger(L, 0x7BEF); lua_setglobal(L, "GRAY");
+  //--- LUA FUNCTION DEFENITIONS ---
   lua_register(L, "getTouch", l_getTouch);
   lua_register(L, "setTextSize", l_setTextSize);
   lua_register(L, "cls", l_cls);
