@@ -54,7 +54,7 @@ TECHNICAL REQUIREMENTS
 * Arduino Core: ESP32 by Espressif Systems v3.3.6. (Note: v3.3.7 contains regressions affecting NimBLE initialization).
 * Partition Scheme: Huge APP (2MB No OTA / 2MB FATFS).
 * Flash Mode: DIO @ 40MHz for standard ESP32.
-* Required Libraries: NimBLE-Arduino, GFX_Library_for_Arduino, and TJpg_Decoder.
+* Required Libraries: NimBLE-Arduino (v1.4.2), GFX_Library_for_Arduino, and TJpg_Decoder.
 ________________
 IMPLEMENTATION NOTES
 * BLE Stack: The Bluetooth task is initialized with a 20,000 to 30,000-byte stack on Core 0 to ensure stability during active device scanning.
