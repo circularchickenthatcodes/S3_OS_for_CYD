@@ -1,91 +1,91 @@
-S3-OS: LUA-POWERED MICRO-OS FOR ESP32
+S3-OS: LUA-POWERED MICRO-OS FOR ESP32  
 A modular operating system framework for the Cheap Yellow Display (CYD)
 S3-OS is a lightweight multitasking operating system designed for the ESP32-S3 and WROOM architectures. It features a desktop environment, an integrated text editor, a multimedia player, and a Lua-based API that allows users to execute applications and games directly from an SD card without firmware modification.
 
-NEW IN THIS VERSION
-Visual Desktop & App Icons: A new GUI that supports icon.jpg thumbnails, grid-based navigation, and an "S3 Games" shortcut.
+NEW IN THIS VERSION  
+Visual Desktop & App Icons: A new GUI that supports icon.jpg thumbnails, grid-based navigation, and an "S3 Games" shortcut.  
 
-Touch Gesture Engine: Added vertical swipe detection to scroll through file lists and desktop menus seamlessly.
+Touch Gesture Engine: Added vertical swipe detection to scroll through file lists and desktop menus seamlessly.  
 
-Horizontal Navigation: Full support for kbdX inputs, allowing for grid-based app selection on the desktop.
+Horizontal Navigation: Full support for kbdX inputs, allowing for grid-based app selection on the desktop.  
 
-Refined File Management: Integrated shortcuts for creating files (N), folders (M), deleting (D), and renaming (R).
+Refined File Management: Integrated shortcuts for creating files (N), folders (M), deleting (D), and renaming (R).  
 
-RGB Status Feedback: Utilization of the CYD's onboard RGB LEDs to indicate system states (Boot, Shutdown, Activity).
+RGB Status Feedback: Utilization of the CYD's onboard RGB LEDs to indicate system states (Boot, Shutdown, Activity).  
 
-MJPEG Video Playback: High-performance video streaming from SD card with hardware-accelerated decoding.
+MJPEG Video Playback: High-performance video streaming from SD card with hardware-accelerated decoding.  
 
-CORE FEATURES
+CORE FEATURES  
 
-Dual-Core Task Distribution: The UI and OS kernel operate on Core 1, while the NimBLE stack is pinned to Core 0 to ensure radio operations do not interfere with display refresh rates.
+Dual-Core Task Distribution: The UI and OS kernel operate on Core 1, while the NimBLE stack is pinned to Core 0 to ensure radio operations do not interfere with display refresh rates.  
+  
+Desktop and App Launcher: A visual icon-based desktop that scans the apps folder for bundles and a legacy S3 Games launcher for standalone scripts.  
 
-Desktop and App Launcher: A visual icon-based desktop that scans the apps folder for bundles and a legacy S3 Games launcher for standalone scripts.
+Integrated Code Editor: Build and modify Lua scripts directly on the device with keyboard support, real-time scrolling, and cursor blinking.  
 
-Integrated Code Editor: Build and modify Lua scripts directly on the device with keyboard support, real-time scrolling, and cursor blinking.
+Multimedia Suite: Built-in support for rendering JPEG images and playback of MJPEG video files from the SD card.  
 
-Multimedia Suite: Built-in support for rendering JPEG images and playback of MJPEG video files from the SD card.
+Lua Virtual Machine: Provides a sandbox for third-party scripts with direct hooks into hardware functions via the custom os library.  
+ 
+SD CARD DIRECTORY STRUCTURE  
 
-Lua Virtual Machine: Provides a sandbox for third-party scripts with direct hooks into hardware functions via the custom os library.
+The OS identifies applications by scanning for specific file flags. The SD card must follow this hierarchy:  
 
-SD CARD DIRECTORY STRUCTURE
+SD Card Root/  
 
-The OS identifies applications by scanning for specific file flags. The SD card must follow this hierarchy:
+├── apps/  
 
-SD Card Root/
+│ └── Snake_Game/  
 
-├── apps/
+│ ├── Snake.game (Flag file containing the Display Name)  
 
-│ └── Snake_Game/
+│ ├── main.lua (Main Execution Logic)  
 
-│ ├── Snake.game (Flag file containing the Display Name)
+│ └── icon.jpg (Launcher Thumbnail)  
+ 
+├── games/  
 
-│ ├── main.lua (Main Execution Logic)
+│ └── (Standalone .lua files for the legacy launcher)  
 
-│ └── icon.jpg (Launcher Thumbnail)
+└── [Other Files] (Support for .txt, .jpg, and .mjpeg)  
 
-├── games/
+The .game File The .game file serves two purposes:  
 
-│ └── (Standalone .lua files for the legacy launcher)
+App Discovery: Its presence tells the OS that the parent folder is a valid application.  
 
-└── [Other Files] (Support for .txt, .jpg, and .mjpeg)
+Metadata: The text content inside the file is read by the OS and displayed as the App Name on the desktop UI.  
 
-The .game File The .game file serves two purposes:
+LUA API REFERENCE  
 
-App Discovery: Its presence tells the OS that the parent folder is a valid application.
+The following functions are exported from the C++ kernel to the Lua environment:  
 
-Metadata: The text content inside the file is read by the OS and displayed as the App Name on the desktop UI.
+Graphics and Display  
 
-LUA API REFERENCE
+cls(color): Fills the active display buffer with a specific 16-bit color.  
 
-The following functions are exported from the C++ kernel to the Lua environment:
+setTextSize(size): Sets the global font scaling for text rendering.  
 
-Graphics and Display
+printAt(x, y, text, color): Renders a string at the specified pixel coordinates.  
 
-cls(color): Fills the active display buffer with a specific 16-bit color.
+rect(x, y, w, h, color): Draws a rectangle outline.  
 
-setTextSize(size): Sets the global font scaling for text rendering.
+fillRect(x, y, w, h, color): Draws a solid, filled rectangle.  
 
-printAt(x, y, text, color): Renders a string at the specified pixel coordinates.
+circle(x, y, r, color, fill): Draws or fills a circle based on the boolean fill parameter.  
 
-rect(x, y, w, h, color): Draws a rectangle outline.
+drawImg(path, x, y, scale): Renders a JPEG image from the application directory.  
 
-fillRect(x, y, w, h, color): Draws a solid, filled rectangle.
+System and Hardware  
 
-circle(x, y, r, color, fill): Draws or fills a circle based on the boolean fill parameter.
+getTouch(): Returns the current status and X/Y coordinates of a touch event.  
 
-drawImg(path, x, y, scale): Renders a JPEG image from the application directory.
+getPressedKey(): Returns the ASCII string or the raw HID code of the current key press.  
+ 
+isKeyDown(key): Returns true if a specific key (string "w" or HID code) is held down.  
 
-System and Hardware
+playSound(freq, ms): Generates a tone on the onboard buzzer (GPIO 26).  
 
-getTouch(): Returns the current status and X/Y coordinates of a touch event.
-
-getPressedKey(): Returns the ASCII string or the raw HID code of the current key press.
-
-isKeyDown(key): Returns true if a specific key (string "w" or HID code) is held down.
-
-playSound(freq, ms): Generates a tone on the onboard buzzer (GPIO 26).
-
-delay(ms): Pauses script execution safely while maintaining system stability.
+delay(ms): Pauses script execution safely while maintaining system stability.  
 
 CONTROLS & GESTURES
 
