@@ -9,6 +9,7 @@
 #include <functional>
 #include "driver/gpio.h"
 #include "esp_bt.h"
+#include <LittleFS.h>
 
 // --- LUA 5.1 HEADERS ---
 extern "C" {
@@ -53,6 +54,7 @@ volatile bool kbdShift = false;
 volatile char lastKey = 0;
 volatile uint8_t lastRawKey = 0;
 std::set<uint8_t> pressedKeys;
+Arduino_Canvas *hudCanvas = nullptr;
 
 const char *targetDeviceName = "JK-61 5.0";
 
@@ -316,7 +318,7 @@ void playMJPEG(String path) {
   free(mjpeg_buf);
   mjpegFile.close();
   kbdBack = false;
-  TJpg.setJpgScale(1);
+  TJpgDec.setJpgScale(1);
   fullRedraw();
 }
 
@@ -348,6 +350,32 @@ String inputPrompt(String title) {
   }
 }
 
+// Mapping array: asciiToHID[ascii_char] = hid_code
+uint8_t asciiToHID[128] = {0};
+
+void initKeyMap() {
+    // Letters
+    for (int i = 0; i < 26; i++) {
+        asciiToHID['a' + i] = 0x04 + i;
+        asciiToHID['A' + i] = 0x04 + i;
+    }
+    // Numbers
+    for (int i = 1; i <= 9; i++) asciiToHID['0' + i] = 0x1E + i - 1;
+    asciiToHID['0'] = 0x27;
+
+    // Common Symbols
+    asciiToHID[' '] = 0x2C; asciiToHID['-'] = 0x2D; asciiToHID['='] = 0x2E;
+    asciiToHID['['] = 0x2F; asciiToHID[']'] = 0x30; asciiToHID['\\'] = 0x31;
+    asciiToHID[';'] = 0x33; asciiToHID['\''] = 0x34; asciiToHID['`'] = 0x35;
+    asciiToHID[','] = 0x36; asciiToHID['.'] = 0x37; asciiToHID['/'] = 0x38;
+    
+    // Shifted variants of symbols
+    asciiToHID['!'] = 0x1E; asciiToHID['@'] = 0x1F; asciiToHID['#'] = 0x20;
+    asciiToHID['$'] = 0x21; asciiToHID['%'] = 0x22; asciiToHID['^'] = 0x23;
+    asciiToHID['&'] = 0x24; asciiToHID['*'] = 0x25; asciiToHID['('] = 0x26;
+    asciiToHID[')'] = 0x27; asciiToHID['_'] = 0x2D; asciiToHID['+'] = 0x2E;
+}
+
 static int l_getTouch(lua_State *L) {
   if (touch.touched()) {
     TS_Point p = touch.getPoint();
@@ -375,11 +403,81 @@ static int l_printAt(lua_State *L) {
   gfx->print(luaL_checkstring(L, 3));
   return 0;
 }
-static int l_isKeyDown(lua_State *L) {
-  uint8_t keyCheck = (uint8_t)luaL_checkinteger(L, 1);
-  lua_pushboolean(L, pressedKeys.find(keyCheck) != pressedKeys.end());
-  return 1;
+
+uint16_t wallTexture[64 * 64];
+
+static int l_loadTexture(lua_State *L) {
+    const char* path = luaL_checkstring(L, 1);
+    File f = SD.open(path);
+    if (!f) return 0;
+    
+    f.read((uint8_t*)wallTexture, 8192); // Fill the RAM buffer
+    f.close();
+    return 0;
 }
+
+static int l_flashWrite(lua_State *L) {
+    const char* key = lua_tostring(L, 1);
+    const char* data = lua_tostring(L, 2);
+    
+    String path = String("/") + key + ".txt";
+    File f = LittleFS.open(path, "w");
+    if (!f) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    f.print(data);
+    f.close();
+    lua_pushboolean(L, true);
+    return 1;
+}
+
+static int l_flashRead(lua_State *L) {
+    const char* key = lua_tostring(L, 1);
+    
+    String path = String("/") + key + ".txt";
+    File f = LittleFS.open(path, "r");
+    if (!f) {
+        lua_pushnil(L);
+        return 1;
+    }
+    String data = f.readString();
+    f.close();
+    lua_pushstring(L, data.c_str());
+    return 1;
+}
+
+static int l_flashExists(lua_State *L) {
+    const char* key = lua_tostring(L, 1);
+    
+    String path = String("/") + key + ".txt";
+    bool exists = LittleFS.exists(path);
+    lua_pushboolean(L, exists);
+    return 1;
+}
+
+static int l_isKeyDown(lua_State *L) {
+    uint8_t keyCheck = 0;
+
+    if (lua_isnumber(L, 1)) {
+        keyCheck = (uint8_t)lua_tointeger(L, 1);
+    } 
+    else if (lua_isstring(L, 1)) {
+        const char* s = lua_tostring(L, 1);
+        // Simple mapping for common game keys
+        if (strcmp(s, "w") == 0) keyCheck = 0x1A;
+        else if (strcmp(s, "a") == 0) keyCheck = 0x04;
+        else if (strcmp(s, "s") == 0) keyCheck = 0x16;
+        else if (strcmp(s, "d") == 0) keyCheck = 0x07;
+        else if (strcmp(s, "esc") == 0) keyCheck = 0x29;
+        else if (strcmp(s, "space") == 0) keyCheck = 0x2C;
+    }
+
+    // Check if the key is in the pressedKeys set 
+    lua_pushboolean(L, pressedKeys.find(keyCheck) != pressedKeys.end());
+    return 1;
+}
+
 static int l_rect(lua_State *L) {
   gfx->drawRect(luaL_checkinteger(L, 1), luaL_checkinteger(L, 2), luaL_checkinteger(L, 3), luaL_checkinteger(L, 4), (uint16_t)luaL_checkinteger(L, 5));
   return 0;
@@ -430,6 +528,48 @@ static int l_drawImg(lua_State *L) {
   return 0;
 }
 
+static int l_drawTextureStrip(lua_State *L) {
+    int x = luaL_checkinteger(L, 1);       // Screen X
+    int yStart = luaL_checkinteger(L, 2);   // Screen Y Start
+    int h = luaL_checkinteger(L, 3);        // Screen Height
+    int texX = luaL_checkinteger(L, 4);     // Texture X Column (0-63)
+    bool shaded = lua_toboolean(L, 5);      // Darken for side walls
+
+    for (int i = 0; i < h; i++) {
+        int texY = (i * 64) / h; // Scale texture Y to fit wall height
+        uint16_t color = wallTexture[texY * 64 + texX];
+        
+        // Simple bit-shift shading for side walls
+        if (shaded) color = (color & 0xF7DE) >> 1; 
+
+        // Draw 2-pixel wide strip for 160-res mode
+        gfx->drawPixel(x, yStart + i, color);
+        gfx->drawPixel(x + 1, yStart + i, color);
+    }
+    return 0;
+}
+
+static int l_drawTrapezoid(lua_State *L) {
+    int x1 = luaL_checkinteger(L, 1);
+    int y1 = luaL_checkinteger(L, 2);
+    int w1 = luaL_checkinteger(L, 3);
+    int x2 = luaL_checkinteger(L, 4);
+    int y2 = luaL_checkinteger(L, 5);
+    int w2 = luaL_checkinteger(L, 6);
+    uint16_t color = (uint16_t)luaL_checkinteger(L, 7);
+
+    // Draw a series of horizontal lines to bridge the two widths
+    int steps = abs(y2 - y1);
+    for (int i = 0; i <= steps; i++) {
+        float t = (float)i / steps;
+        int currW = w1 + (w2 - w1) * t;
+        int currX = x1 + (x2 - x1) * t;
+        int currY = y1 + (y2 - y1) * t;
+        gfx->drawFastHLine(currX - (currW / 2), currY, currW, color);
+    }
+    return 0;
+}
+
 void runLua(String filename) {
   String fullPath = filename.startsWith("/") ? filename : (currentPath + (currentPath.endsWith("/") ? "" : "/") + filename);
   File f = SD.open(fullPath);
@@ -439,8 +579,6 @@ void runLua(String filename) {
   lua_State *L = luaL_newstate();
   luaL_openlibs(L);
 
-  lua_State *L = luaL_newstate();
-  luaL_openlibs(L);
 
   // ---  LUA COLOR DEFINITIONS  ---
   lua_pushinteger(L, 0x0000); lua_setglobal(L, "BLACK");
@@ -466,6 +604,48 @@ void runLua(String filename) {
   lua_register(L, "getPressedKey", l_getPressedKey);
   lua_register(L, "delay", l_delay);
   lua_register(L, "drawImg", l_drawImg);
+  lua_register(L, "loadTexture", l_loadTexture);
+  lua_register(L, "drawTextureStrip", l_drawTextureStrip);
+  lua_register(L, "drawTrapezoid", l_drawTrapezoid);
+  lua_register(L, "initHUD", [](lua_State* L) -> int {
+    if (!hudCanvas) {
+        // 200x100 fits in internal RAM easily
+        hudCanvas = new Arduino_Canvas(200, 100, gfx);
+        hudCanvas->begin();
+    }
+    return 0;
+});
+lua_register(L, "fillHUD", [](lua_State* L) -> int {
+    int x = luaL_checkinteger(L, 1);
+    int y = luaL_checkinteger(L, 2);
+    int w = luaL_checkinteger(L, 3);
+    int h = luaL_checkinteger(L, 4);
+    uint16_t color = (uint16_t)luaL_checkinteger(L, 5);
+    if (hudCanvas) hudCanvas->fillRect(x, y, w, h, color);
+    return 0;
+});
+lua_register(L, "pushHUD", [](lua_State* L) -> int {
+    if (hudCanvas) {
+        int screenX = luaL_checkinteger(L, 1);
+        int screenY = luaL_checkinteger(L, 2);
+        
+        // Use the base gfx object to draw the canvas buffer at X, Y
+        gfx->draw16bitRGBBitmap(
+            screenX, 
+            screenY, 
+            hudCanvas->getFramebuffer(), 
+            200, // Width must match your canvas creation
+            100  // Height must match your canvas creation
+        );
+        
+        // Clear for next frame
+        hudCanvas->fillScreen(0x0000); 
+    }
+    return 0;
+});
+lua_register(L, "flashExists", l_flashExists);
+lua_register(L, "flashRead", l_flashRead);
+lua_register(L, "flashWrite", l_flashWrite);
   gfx->setTextSize(1);
   gfx->fillScreen(0x0000);
   if (luaL_dostring(L, code.c_str()) != 0) {
@@ -865,8 +1045,9 @@ void setup() {
   digitalWrite(LED_BLUE, HIGH);
   digitalWrite(LED_GREEN, LOW);
 
+  LittleFS.begin(true);
   pinMode(0, INPUT_PULLUP);
-  gfx->begin(45000000);
+  gfx->begin(80000000);
   gfx->setRotation(1);
   
 
