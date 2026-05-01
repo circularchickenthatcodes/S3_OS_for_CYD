@@ -42,13 +42,72 @@
 
 The OS identifies applications by scanning for specific file flags. The SD card must follow this hierarchy:
 
-```text
-SD Card Root/
-├── apps/
-│   └── Snake_Game/
-│       ├── Snake.game (Flag file containing the Display Name)
-│       ├── main.lua   (Main Execution Logic)
-│       └── icon.jpg   (Launcher Thumbnail)
-├── games/
-│   └── (Standalone .lua files for the legacy launcher)
-└── [Other Files] (Support for .txt, .jpg, and .mjpeg)
+    SD Card Root/
+    ├── apps/
+    │   └── Snake_Game/
+    │       ├── Snake.game (Flag file containing the Display Name)
+    │       ├── main.lua   (Main Execution Logic)
+    │       └── icon.jpg   (Launcher Thumbnail)
+    ├── games/
+    │   └── (Standalone .lua files for the legacy launcher)
+    └── [Other Files] (Support for .txt, .jpg, and .mjpeg)
+
+> **The .game File:** Its presence tells the OS that the parent folder is a valid application. The text content inside the file is read by the OS and displayed as the App Name on the desktop UI.
+
+---
+
+## 📜 LUA API REFERENCE
+
+The following functions are exported from the C++ kernel to the Lua environment:
+
+### **Graphics and Display**
+* `cls(color)`: Fills the active display buffer with a specific 16-bit color.
+* `setTextSize(size)`: Sets the global font scaling for text rendering.
+* `printAt(x, y, text, color)`: Renders a string at the specified pixel coordinates.
+* `rect(x, y, w, h, color)`: Draws a rectangle outline.
+* `fillRect(x, y, w, h, color)`: Draws a solid, filled rectangle.
+* `circle(x, y, r, color, fill)`: Draws or fills a circle based on the boolean fill parameter.
+* `drawImg(path, x, y, scale)`: Renders a JPEG image from the application directory.
+
+### **System and Hardware**
+* `getTouch()`: Returns the current status and X/Y coordinates of a touch event.
+* `getPressedKey()`: Returns the ASCII string or the raw HID code of the current key press.
+* `isKeyDown(key)`: Returns **true** if a specific key (string or HID code) is held down.
+* `playSound(freq, ms)`: Generates a tone on the onboard buzzer (**GPIO 26**).
+* `delay(ms)`: Pauses script execution safely.
+
+---
+
+## ⌨️ CONTROLS & SHORTCUTS
+
+| Action | Key / Gesture |
+| :--- | :--- |
+| **Navigate** | Arrow Keys / Swipe Up-Down |
+| **Execute/Open** | Enter / Tap Item |
+| **New File** | `N` (0x11) |
+| **MkDir** | `M` (0x10) |
+| **Delete** | `D` (0x07) |
+| **Rename** | `R` (0x15) |
+| **Editor Mode** | `Shift + Enter` |
+| **Exit/Back** | `Backspace` (0x2A) |
+
+---
+
+## ⚙️ TECHNICAL SPECIFICATIONS
+
+* **Display (ILI9341):** DC: 2, CS: 15, CLK: 14, MOSI: 13
+* **Touch (XPT2046):** CS: 33, CLK: 25, MOSI: 32, MISO: 39
+* **RGB LED:** Red: 4, Green: 16, Blue: 17 (**Active Low**)
+* **Buzzer:** Pin 26
+* **Backlight:** Pin 21
+* **Partition Scheme:** Huge APP (3MB No OTA)
+
+---
+
+## 📝 IMPLEMENTATION NOTES
+
+* **Power Management:** Holding the **Boot button (GPIO 0)** triggers a software-controlled shutdown. The system enters Deep Sleep and disables the backlight to save power.
+* **Bus Sharing:** The SPI bus is shared between the display, SD card, and touch. The kernel manages Chip Select (CS) logic to prevent data collision.
+* **RGB Indicators:**
+    * **Green:** System ready / Booted.
+    * **Red:** Shutdown process / Deep Sleep.
