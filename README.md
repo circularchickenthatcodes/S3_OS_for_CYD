@@ -17,64 +17,40 @@
 
 ---
 
-## 🔄 VERSION COMPARISON
-
-| Feature | Legacy Version | Current Version (2.0) |
-| :--- | :--- | :--- |
-| **Navigation** | List-based only | **Icon Grid Desktop** |
-| **Input** | Vertical only | **XY Axis (Grid) Support** |
-| **Media** | JPEG Images | **JPEG + MJPEG Video** |
-| **File Logic** | Read/Open Only | **Full CRUD (Create/Delete/Rename)** |
-| **Gestures** | Single Tap | **Vertical Swiping & Long Press** |
-
----
-
-## 🛠 CORE FEATURES
-
-* **Dual-Core Task Distribution:** The UI and OS kernel operate on Core 1, while the NimBLE stack is pinned to Core 0 to ensure radio operations do not interfere with display refresh rates.
-* **Integrated Code Editor:** Build and modify Lua scripts directly on the device with keyboard support and real-time scrolling.
-* **Multimedia Suite:** Built-in support for rendering JPEG images and playback of MJPEG video files from the SD card.
-* **Lua Virtual Machine:** Provides a sandbox for third-party scripts with direct hooks into hardware functions.
-
----
-
-## 📂 SD CARD DIRECTORY STRUCTURE
-
-The OS identifies applications by scanning for specific file flags. The SD card must follow this hierarchy:
-
-    SD Card Root/
-    ├── apps/
-    │   └── Snake_Game/
-    │       ├── Snake.game (Flag file containing the Display Name)
-    │       ├── main.lua   (Main Execution Logic)
-    │       └── icon.jpg   (Launcher Thumbnail)
-    ├── games/
-    │   └── (Standalone .lua files for the legacy launcher)
-    └── [Other Files] (Support for .txt, .jpg, and .mjpeg)
-
-> **The .game File:** Its presence tells the OS that the parent folder is a valid application. The text content inside the file is read by the OS and displayed as the App Name on the desktop UI.
-
----
-
 ## 📜 LUA API REFERENCE
 
-The following functions are exported from the C++ kernel to the Lua environment:
+The following functions are exported from the C++ kernel to the Lua environment. You can call these directly within your `.lua` scripts.
 
-### **Graphics and Display**
-* `cls(color)`: Fills the active display buffer with a specific 16-bit color.
-* `setTextSize(size)`: Sets the global font scaling for text rendering.
-* `printAt(x, y, text, color)`: Renders a string at the specified pixel coordinates.
-* `rect(x, y, w, h, color)`: Draws a rectangle outline.
+### **Graphics & Display**
+* `cls(color)`: Clears the screen with a specific 16-bit (RGB565) color.
+* `setTextSize(size)`: Sets the font scale (e.g., 1, 2, or 3).
+* `printAt(x, y, text, color)`: Draws text at specific coordinates with an optional color.
+* `rect(x, y, w, h, color)`: Draws the outline of a rectangle.
 * `fillRect(x, y, w, h, color)`: Draws a solid, filled rectangle.
-* `circle(x, y, r, color, fill)`: Draws or fills a circle based on the boolean fill parameter.
-* `drawImg(path, x, y, scale)`: Renders a JPEG image from the application directory.
+* `circle(x, y, r, color, fill)`: Draws a circle. Set `fill` to `true` for a solid circle, `false` for an outline.
+* `drawImg(path, x, y, scale)`: Renders a JPEG image from the SD card.
+* `drawTrapezoid(x1, y1, w1, x2, y2, w2, color)`: Draws a filled trapezoid between two points with different widths. Useful for 3D floors/ceilings.
 
-### **System and Hardware**
-* `getTouch()`: Returns the current status and X/Y coordinates of a touch event.
-* `getPressedKey()`: Returns the ASCII string or the raw HID code of the current key press.
-* `isKeyDown(key)`: Returns **true** if a specific key (string or HID code) is held down.
-* `playSound(freq, ms)`: Generates a tone on the onboard buzzer (**GPIO 26**).
-* `delay(ms)`: Pauses script execution safely.
+### **3D & Advanced Rendering**
+* `loadTexture(path)`: Loads a 64x64 raw texture file into a dedicated RAM buffer for high-speed access.
+* `drawTextureStrip(x, yStart, h, texX, shaded)`: Draws a vertical 2-pixel wide slice of the loaded texture. `shaded` applies a 50% brightness reduction.
+
+### **Internal Canvas (HUD)**
+* `initHUD()`: Creates a 200x100 off-screen drawing buffer in internal RAM to prevent flickering.
+* `fillHUD(x, y, w, h, color)`: Draws a rectangle specifically onto the HUD buffer.
+* `pushHUD(screenX, screenY)`: Flushes the HUD buffer onto the main display at the target coordinates.
+
+### **System & Hardware**
+* `getTouch()`: Returns `touched (bool), x, y`.
+* `getPressedKey()`: Returns the ASCII character or the raw HID integer code of the last key pressed.
+* `isKeyDown(key)`: Checks if a key is currently held down. Supports strings like `"w"`, `"a"`, `"s"`, `"d"`, `"space"`, `"esc"` or raw HID codes.
+* `playSound(freq, ms)`: Beeps the onboard buzzer at a specific frequency for a set duration.
+* `delay(ms)`: Pauses script execution for the specified milliseconds.
+
+### **Flash Storage (LittleFS)**
+* `flashWrite(key, data)`: Saves a string to the ESP32's internal flash memory as `key.txt`.
+* `flashRead(key)`: Retrieves the string content from internal flash. Returns `nil` if not found.
+* `flashExists(key)`: Returns `true` if the specified file exists in internal flash.
 
 ---
 
@@ -84,11 +60,11 @@ The following functions are exported from the C++ kernel to the Lua environment:
 | :--- | :--- |
 | **Navigate** | Arrow Keys / Swipe Up-Down |
 | **Execute/Open** | Enter / Tap Item |
-| **New File** | `N` (0x11) |
-| **MkDir** | `M` (0x10) |
-| **Delete** | `D` (0x07) |
-| **Rename** | `R` (0x15) |
-| **Editor Mode** | `Shift + Enter` |
+| **New File** | `N` |
+| **MkDir** | `M` |
+| **Delete** | `D` |
+| **Rename** | `R` |
+| **Save (Editor)** | `TAB` |
 | **Exit/Back** | `Backspace` (0x2A) |
 
 ---
@@ -101,13 +77,3 @@ The following functions are exported from the C++ kernel to the Lua environment:
 * **Buzzer:** Pin 26
 * **Backlight:** Pin 21
 * **Partition Scheme:** Huge APP (3MB No OTA)
-
----
-
-## 📝 IMPLEMENTATION NOTES
-
-* **Power Management:** Holding the **Boot button (GPIO 0)** triggers a software-controlled shutdown. The system enters Deep Sleep and disables the backlight to save power.
-* **Bus Sharing:** The SPI bus is shared between the display, SD card, and touch. The kernel manages Chip Select (CS) logic to prevent data collision.
-* **RGB Indicators:**
-    * **Green:** System ready / Booted.
-    * **Red:** Shutdown process / Deep Sleep.
