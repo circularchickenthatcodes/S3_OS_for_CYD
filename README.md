@@ -1,4 +1,4 @@
-*S3-OS: LUA-POWERED MICRO-OS FOR ESP32  
+S3-OS: LUA-POWERED MICRO-OS FOR ESP32  
 A modular operating system framework for the Cheap Yellow Display (CYD)
 S3-OS is a lightweight multitasking operating system designed for the ESP32-S3 and WROOM architectures. It features a desktop environment, an integrated text editor, a multimedia player, and a Lua-based API that allows users to execute applications and games directly from an SD card without firmware modification.
 
