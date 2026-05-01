@@ -61,7 +61,7 @@ The OS identifies applications by scanning for specific file flags. The SD card 
 The following functions are exported from the C++ kernel to the Lua environment:
 
 ### **Graphics and Display**
-* `cls(color)`: Fills the active display buffer with a specific 16-bit color.
+* ```cls(color)```: Fills the active display buffer with a specific 16-bit color.
 * `setTextSize(size)`: Sets the global font scaling for text rendering.
 * `printAt(x, y, text, color)`: Renders a string at the specified pixel coordinates.
 * `rect(x, y, w, h, color)`: Draws a rectangle outline.
