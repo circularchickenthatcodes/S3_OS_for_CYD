@@ -13,7 +13,6 @@
 * **2D Navigation:** Added support for horizontal movement (`kbdX`) in the desktop grid.
 * **Advanced File Explorer:** New keyboard shortcuts for **Create (N)**, **MkDir (M)**, **Delete (D)**, and **Rename (R)**.
 * **RGB System LED:** Visual feedback using the CYD's onboard RGB LEDs (Red/Green/Blue).
-* **Multimedia Upgrades:** Hardware-accelerated MJPEG video playback support.
 
 ---
 
