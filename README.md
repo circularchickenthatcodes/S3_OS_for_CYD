@@ -4,19 +4,8 @@
 
 **S3-OS** is a lightweight multitasking operating system designed for the **ESP32-S3 and WROOM** architectures. It features a desktop environment, an integrated text editor, a multimedia player, and a Lua-based API that allows users to execute applications and games directly from an SD card without firmware modification.
 
----
 
-## 🆕 NEW IN THIS VERSION
-
-* **Visual Desktop & App Icons:** A new GUI that supports `icon.jpg` thumbnails and grid-based navigation.
-* **Touch Gesture Engine:** Integrated vertical swipe detection for scrolling and tap-to-select logic.
-* **2D Navigation:** Added support for horizontal movement (`kbdX`) in the desktop grid.
-* **Advanced File Explorer:** New keyboard shortcuts for **Create (N)**, **MkDir (M)**, **Delete (D)**, and **Rename (R)**.
-* **RGB System LED:** Visual feedback using the CYD's onboard RGB LEDs (Red/Green/Blue).
-
----
-
-## 📜 LUA API REFERENCE
+##  LUA API REFERENCE
 
 The following functions are exported from the C++ kernel to the Lua environment. You can call these directly within your `.lua` scripts.
 
@@ -53,7 +42,7 @@ The following functions are exported from the C++ kernel to the Lua environment.
 
 ---
 
-## ⌨️ CONTROLS & SHORTCUTS
+##  CONTROLS & SHORTCUTS
 
 | Action | Key / Gesture |
 | :--- | :--- |
@@ -68,7 +57,7 @@ The following functions are exported from the C++ kernel to the Lua environment.
 
 ---
 
-## ⚙️ TECHNICAL SPECIFICATIONS
+## TECHNICAL SPECIFICATIONS
 
 * **Display (ILI9341):** DC: 2, CS: 15, CLK: 14, MOSI: 13
 * **Touch (XPT2046):** CS: 33, CLK: 25, MOSI: 32, MISO: 39
