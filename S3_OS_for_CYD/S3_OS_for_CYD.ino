@@ -725,17 +725,18 @@ static void notifyCallback(NimBLERemoteCharacteristic *pChar, uint8_t *pData, si
 void BLETaskCode(void * pvParameters) {
   NimBLEDevice::init("S3-OS");
   while(true) {
-    NimBLEScan* pScan = NimBLEDevice::getScan(); pScan->setActiveScan(true);
-    NimBLEScanResults results = pScan->start(5, false);
+    NimBLEScan* pScan = NimBLEDevice::getScan(); 
+    pScan->setActiveScan(true);
+    NimBLEScanResults results = pScan->getResults(5000, false);
     for (int i = 0; i < results.getCount(); i++) {
-      NimBLEAdvertisedDevice device = results.getDevice(i);
-      if (device.getName() == targetDeviceName) {
+      const NimBLEAdvertisedDevice *device = results.getDevice(i);
+      if (device->getName() == targetDeviceName) {
         NimBLEClient* pClient = NimBLEDevice::createClient();
         if (pClient->connect(&device)) {
           NimBLERemoteService* pSvc = pClient->getService("1812");
           if (pSvc) {
             auto chars = pSvc->getCharacteristics(true);
-            for (auto pChr : *chars) {
+            for (auto pChr : chars) {
               if (pChr->getUUID() == NimBLEUUID((uint16_t)0x2A4D) && pChr->canNotify()) pChr->subscribe(true, notifyCallback);
             }
           }
@@ -745,6 +746,7 @@ void BLETaskCode(void * pvParameters) {
     vTaskDelay(5000 / portTICK_PERIOD_MS);
   }
 }
+
 // ===================== EDITOR & SYSTEM =====================
 String getNewFileName() {
   int i = 1;
